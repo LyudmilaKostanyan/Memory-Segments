@@ -1,4 +1,4 @@
-name: Cross platform O0/O3 builds with debug symbols
+name: Cross platform O0/O3 builds (Makefiles only, no LLVM/Ninja)
 
 on:
   push:
@@ -14,40 +14,32 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install tools
-      run: sudo apt-get update && sudo apt-get install -y binutils ninja-build
+      run: sudo apt-get update && sudo apt-get install -y build-essential binutils cmake
 
     - name: Build -O0
       run: |
-        cmake -S . -B build_O0 -G Ninja -DCMAKE_CXX_FLAGS_INIT="-O0 -g" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS_INIT="-O0 -g" -DCMAKE_BUILD_TYPE=Release
         cmake --build build_O0
 
     - name: Run -O0
       run: |
         ./build_O0/main
-        echo "--- size ---"
         size ./build_O0/main
-        echo "--- nm -C ---"
         nm -C ./build_O0/main
-        echo "--- objdump -t ---"
         objdump -t ./build_O0/main
-        echo "--- readelf -S ---"
         readelf -S ./build_O0/main
 
     - name: Build -O3
       run: |
-        cmake -S . -B build_O3 -G Ninja -DCMAKE_CXX_FLAGS_INIT="-O3 -g" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS_INIT="-O3 -g" -DCMAKE_BUILD_TYPE=Release
         cmake --build build_O3
 
     - name: Run -O3
       run: |
         ./build_O3/main
-        echo "--- size ---"
         size ./build_O3/main
-        echo "--- nm -C ---"
         nm -C ./build_O3/main
-        echo "--- objdump -t ---"
         objdump -t ./build_O3/main
-        echo "--- readelf -S ---"
         readelf -S ./build_O3/main
 
   macos:
@@ -56,58 +48,48 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Ninja
-      run: brew install ninja
-
     - name: Build -O0
       run: |
-        cmake -S . -B build_O0 -G Ninja -DCMAKE_CXX_FLAGS_INIT="-O0 -g" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS_INIT="-O0 -g" -DCMAKE_BUILD_TYPE=Release
         cmake --build build_O0
 
     - name: Run -O0
       run: |
         ./build_O0/main
-        echo "--- size ---"
         size ./build_O0/main || echo "size not available"
-        echo "--- nm -C ---"
         nm -C ./build_O0/main || echo "nm not available"
-        echo "--- otool -l ---"
         otool -l ./build_O0/main || echo "otool not available"
 
     - name: Build -O3
       run: |
-        cmake -S . -B build_O3 -G Ninja -DCMAKE_CXX_FLAGS_INIT="-O3 -g" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS_INIT="-O3 -g" -DCMAKE_BUILD_TYPE=Release
         cmake --build build_O3
 
     - name: Run -O3
       run: |
         ./build_O3/main
-        echo "--- size ---"
         size ./build_O3/main || echo "size not available"
-        echo "--- nm -C ---"
         nm -C ./build_O3/main || echo "nm not available"
-        echo "--- otool -l ---"
         otool -l ./build_O3/main || echo "otool not available"
 
   windows:
-    name: Windows Build and Run (O0 & O3 using MSYS2 + Ninja)
+    name: Windows Build and Run (O0 & O3 using MSYS2 + Make)
     runs-on: windows-latest
     defaults:
       run:
         shell: bash
-
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install MSYS2 and Ninja
+    - name: Install MSYS2
       run: choco install msys2 -y
 
-    - name: Install MSYS2 packages (GCC, Ninja, CMake, Binutils)
+    - name: Install MSYS2 packages (GCC, Make, CMake, Binutils)
       run: |
         C:/tools/msys64/usr/bin/bash.exe -lc "
           pacman -Sy --noconfirm \
             mingw-w64-x86_64-toolchain \
-            ninja \
+            make \
             cmake \
             binutils
         "
@@ -117,8 +99,8 @@ jobs:
         C:/tools/msys64/usr/bin/bash.exe -lc "
           export PATH=/mingw64/bin:\$PATH
           mkdir -p build_O0 && cd build_O0
-          cmake -G 'Ninja' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O0 -g' ..
-          cmake --build .
+          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O0 -g' ..
+          make
         "
 
     - name: Run -O0
@@ -128,14 +110,8 @@ jobs:
           cd build_O0
 
           ./main.exe
-
-          echo '--- size ---'
           size ./main.exe
-
-          echo '--- nm -C ---'
           nm -C ./main.exe
-
-          echo '--- objdump -t ---'
           objdump -t ./main.exe
         "
 
@@ -144,8 +120,8 @@ jobs:
         C:/tools/msys64/usr/bin/bash.exe -lc "
           export PATH=/mingw64/bin:\$PATH
           mkdir -p build_O3 && cd build_O3
-          cmake -G 'Ninja' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O3 -g' ..
-          cmake --build .
+          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O3 -g' ..
+          make
         "
 
     - name: Run -O3
@@ -155,13 +131,7 @@ jobs:
           cd build_O3
 
           ./main.exe
-
-          echo '--- size ---'
           size ./main.exe
-
-          echo '--- nm -C ---'
           nm -C ./main.exe
-
-          echo '--- objdump -t ---'
           objdump -t ./main.exe
         "
