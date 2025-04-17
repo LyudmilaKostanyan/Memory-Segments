@@ -7,89 +7,85 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        build_type: [Release]
-        include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+  build-linux:
+    name: Linux Build (O0 & O3)
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set reusable strings
-      id: strings
-      shell: bash
-      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+    - name: Install tools
+      run: sudo apt-get update && sudo apt-get install -y binutils
 
-    - name: Configure CMake
+    - name: Build and run with -O0 and -O3
+      run: |
+        for OPT in O0 O3; do
+          echo "=== Building with -$OPT ==="
+          cmake -S . -B build_$OPT -DCMAKE_CXX_FLAGS="-$OPT" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_$OPT
+
+          echo "--- Running program (-$OPT) ---"
+          ./build_$OPT/main
+
+          echo "--- size (main -$OPT) ---"
+          size ./build_$OPT/main
+
+          echo "--- objdump -t (main -$OPT) ---"
+          objdump -t ./build_$OPT/main
+
+          echo "--- readelf -S (main -$OPT) ---"
+          readelf -S ./build_$OPT/main
+        done
+
+  build-windows:
+    name: Windows Build (O0 & O3)
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build and run with -O0 and -O3
       shell: bash
       run: |
-        if [[ "$RUNNER_OS" == "Windows" ]]; then
-          cmake -S . -B "$(cygpath -u "${{ steps.strings.outputs.build-output-dir }}")" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        else
-          cmake -S . -B ${{ steps.strings.outputs.build-output-dir }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        fi
+        for OPT in O0 O3; do
+          echo "=== Building with /$OPT ==="
+          cmake -S . -B build_$OPT -DCMAKE_CXX_FLAGS="/$OPT" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_$OPT --config Release
 
-    - name: Build
-      shell: bash
-      run: |
-        if [[ "$RUNNER_OS" == "Windows" ]]; then
-          cmake --build "$(cygpath -u "${{ steps.strings.outputs.build-output-dir }}")" --config ${{ matrix.build_type }}
-        else
-          cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-        fi
-
-    - name: Run tests
-      shell: bash
-      run: |
-        echo "Running program and inspecting binary..."
-
-        if [[ "$RUNNER_OS" == "Windows" ]]; then
-          exe_path="$(cygpath -u "${{ steps.strings.outputs.build-output-dir }}")/Release/main.exe"
-          echo "Running: $exe_path"
+          exe_path="build_$OPT/Release/main.exe"
+          echo "--- Running program (/ $OPT) ---"
           "$exe_path"
 
-          echo "== objdump -t =="
+          echo "--- objdump -t (main.exe /$OPT) ---"
           objdump -t "$exe_path" || echo "objdump not available"
 
-          echo "== nm =="
+          echo "--- nm (main.exe /$OPT) ---"
           nm "$exe_path" || echo "nm not available"
+        done
 
-        elif [[ "$RUNNER_OS" == "Linux" ]]; then
-          cd ${{ steps.strings.outputs.build-output-dir }}
-          ./main
+  build-macos:
+    name: macOS Build (O0 & O3)
+    runs-on: macos-latest
 
-          echo "== size =="
-          size ./main
+    steps:
+    - uses: actions/checkout@v4
 
-          echo "== objdump -t =="
-          objdump -t ./main
+    - name: Build and run with -O0 and -O3
+      run: |
+        for OPT in O0 O3; do
+          echo "=== Building with -$OPT ==="
+          cmake -S . -B build_$OPT -DCMAKE_CXX_FLAGS="-$OPT" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_$OPT
 
-          echo "== readelf -S =="
-          readelf -S ./main
+          echo "--- Running program (-$OPT) ---"
+          ./build_$OPT/main
 
-        elif [[ "$RUNNER_OS" == "macOS" ]]; then
-          cd ${{ steps.strings.outputs.build-output-dir }}
-          ./main
+          echo "--- size (main -$OPT) ---"
+          size ./build_$OPT/main || echo "size not available"
 
-          echo "== size =="
-          size ./main || echo "size not available"
+          echo "--- nm (main -$OPT) ---"
+          nm ./build_$OPT/main || echo "nm not available"
 
-          echo "== nm =="
-          nm ./main || echo "nm not available"
-
-          echo "== otool -l (macOS equivalent of readelf) =="
-          otool -l ./main || echo "otool not available"
-        fi
+          echo "--- otool -l (main -$OPT) ---"
+          otool -l ./build_$OPT/main || echo "otool not available"
+        done
