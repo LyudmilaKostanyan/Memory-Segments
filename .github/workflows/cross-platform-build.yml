@@ -1,140 +1,105 @@
-name: Cross platform build
+name: Cross platform O0/O3 builds
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  build-linux:
-    name: Linux Build and Run (O0 & O3)
+  linux:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
 
     - name: Install tools
       run: sudo apt-get update && sudo apt-get install -y binutils
 
-    - name: Build with -O0
+    - name: Build -O0
       run: |
-        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS="-O0" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS_INIT="-O0" -DCMAKE_BUILD_TYPE=Release
         cmake --build build_O0
 
-    - name: Run and Inspect -O0
+    - name: Run -O0
       run: |
         ./build_O0/main
-
-        echo "--- size (-O0) ---"
         size ./build_O0/main
-
-        echo "--- objdump -t (-O0) ---"
         objdump -t ./build_O0/main
-
-        echo "--- readelf -S (-O0) ---"
         readelf -S ./build_O0/main
 
-    - name: Build with -O3
+    - name: Build -O3
       run: |
-        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS="-O3" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS_INIT="-O3" -DCMAKE_BUILD_TYPE=Release
         cmake --build build_O3
 
-    - name: Run and Inspect -O3
+    - name: Run -O3
       run: |
         ./build_O3/main
-
-        echo "--- size (-O3) ---"
         size ./build_O3/main
-
-        echo "--- objdump -t (-O3) ---"
         objdump -t ./build_O3/main
-
-        echo "--- readelf -S (-O3) ---"
         readelf -S ./build_O3/main
 
-  build-windows:
-    name: Windows Build and Run (O0 & O3)
-    runs-on: windows-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Build with /O0
-      shell: bash
-      run: |
-        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS="/O0" -DCMAKE_BUILD_TYPE=Release
-        cmake --build build_O0 --config Release
-
-    - name: Run and Inspect /O0
-      shell: bash
-      run: |
-        exe="build_O0/Release/main.exe"
-        "$exe"
-
-        echo "--- objdump -t (/O0) ---"
-        objdump -t "$exe" || echo "objdump not available"
-
-        echo "--- nm (/O0) ---"
-        nm "$exe" || echo "nm not available"
-
-    - name: Build with /O3
-      shell: bash
-      run: |
-        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS="/O3" -DCMAKE_BUILD_TYPE=Release
-        cmake --build build_O3 --config Release
-
-    - name: Run and Inspect /O3
-      shell: bash
-      run: |
-        exe="build_O3/Release/main.exe"
-        "$exe"
-
-        echo "--- objdump -t (/O3) ---"
-        objdump -t "$exe" || echo "objdump not available"
-
-        echo "--- nm (/O3) ---"
-        nm "$exe" || echo "nm not available"
-
-  build-macos:
-    name: macOS Build and Run (O0 & O3)
+  macos:
     runs-on: macos-latest
-
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build with -O0
+    - name: Build -O0
       run: |
-        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS="-O0" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS_INIT="-O0" -DCMAKE_BUILD_TYPE=Release
         cmake --build build_O0
 
-    - name: Run and Inspect -O0
+    - name: Run -O0
       run: |
         ./build_O0/main
-
-        echo "--- size (-O0) ---"
         size ./build_O0/main || echo "size not available"
-
-        echo "--- nm (-O0) ---"
         nm ./build_O0/main || echo "nm not available"
-
-        echo "--- otool -l (-O0) ---"
         otool -l ./build_O0/main || echo "otool not available"
 
-    - name: Build with -O3
+    - name: Build -O3
       run: |
-        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS="-O3" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS_INIT="-O3" -DCMAKE_BUILD_TYPE=Release
         cmake --build build_O3
 
-    - name: Run and Inspect -O3
+    - name: Run -O3
       run: |
         ./build_O3/main
-
-        echo "--- size (-O3) ---"
         size ./build_O3/main || echo "size not available"
-
-        echo "--- nm (-O3) ---"
         nm ./build_O3/main || echo "nm not available"
-
-        echo "--- otool -l (-O3) ---"
         otool -l ./build_O3/main || echo "otool not available"
+
+  windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Clang instead of MSVC
+      run: |
+        choco install llvm -y
+        echo "CMAKE_CXX_COMPILER=clang++" >> $env:GITHUB_ENV
+
+    - name: Build -O0
+      shell: bash
+      run: |
+        cmake -S . -B build_O0 -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS_INIT="-O0" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_O0 --config Release
+
+    - name: Run -O0
+      shell: bash
+      run: |
+        ./build_O0/main.exe || ./build_O0/Release/main.exe
+        objdump -t ./build_O0/Release/main.exe || echo "objdump not available"
+        nm ./build_O0/Release/main.exe || echo "nm not available"
+
+    - name: Build -O3
+      shell: bash
+      run: |
+        cmake -S . -B build_O3 -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS_INIT="-O3" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_O3 --config Release
+
+    - name: Run -O3
+      shell: bash
+      run: |
+        ./build_O3/main.exe || ./build_O3/Release/main.exe
+        objdump -t ./build_O3/Release/main.exe || echo "objdump not available"
+        nm ./build_O3/Release/main.exe || echo "nm not available"
