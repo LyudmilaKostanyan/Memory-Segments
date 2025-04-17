@@ -89,56 +89,79 @@ jobs:
   windows:
     name: Windows Build and Run (O0 & O3 using Clang + MinGW)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install MSYS2, Clang, and binutils
+    - name: Install MSYS2 and LLVM
       run: |
         choco install msys2 -y
         choco install llvm -y
 
-    - name: Build and Run -O0 (MinGW + Clang)
-      shell: msys2 {0}
+    - name: Install MSYS2 packages
       run: |
-        pacman -Sy --noconfirm mingw-w64-x86_64-toolchain cmake make binutils
+        C:/tools/msys64/usr/bin/bash.exe -lc "
+          pacman -Sy --noconfirm \
+            mingw-w64-x86_64-toolchain \
+            cmake \
+            make \
+            binutils
+        "
 
-        export PATH=/mingw64/bin:$PATH
-
-        mkdir -p build_O0
-        cd build_O0
-
-        cmake -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-O0 -g" ..
-        cmake --build .
-
-        ./main.exe
-
-        echo "--- size ---"
-        size ./main.exe
-
-        echo "--- nm -C ---"
-        nm -C ./main.exe
-
-        echo "--- objdump -t ---"
-        objdump -t ./main.exe
-
-    - name: Build and Run -O3 (MinGW + Clang)
-      shell: msys2 {0}
+    - name: Build -O0
       run: |
-        export PATH=/mingw64/bin:$PATH
+        C:/tools/msys64/usr/bin/bash.exe -lc "
+          export PATH=/mingw64/bin:\$PATH
 
-        mkdir -p build_O3
-        cd build_O3
+          mkdir -p build_O0 && cd build_O0
+          cmake -G 'MinGW Makefiles' -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS='-O0 -g' ..
+          cmake --build .
+        "
 
-        cmake -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-O3 -g" ..
-        cmake --build .
+    - name: Run -O0
+      run: |
+        C:/tools/msys64/usr/bin/bash.exe -lc "
+          export PATH=/mingw64/bin:\$PATH
+          cd build_O0
 
-        ./main.exe
+          ./main.exe
 
-        echo "--- size ---"
-        size ./main.exe
+          echo '--- size ---'
+          size ./main.exe
 
-        echo "--- nm -C ---"
-        nm -C ./main.exe
+          echo '--- nm -C ---'
+          nm -C ./main.exe
 
-        echo "--- objdump -t ---"
-        objdump -t ./main.exe
+          echo '--- objdump -t ---'
+          objdump -t ./main.exe
+        "
+
+    - name: Build -O3
+      run: |
+        C:/tools/msys64/usr/bin/bash.exe -lc "
+          export PATH=/mingw64/bin:\$PATH
+
+          mkdir -p build_O3 && cd build_O3
+          cmake -G 'MinGW Makefiles' -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS='-O3 -g' ..
+          cmake --build .
+        "
+
+    - name: Run -O3
+      run: |
+        C:/tools/msys64/usr/bin/bash.exe -lc "
+          export PATH=/mingw64/bin:\$PATH
+          cd build_O3
+
+          ./main.exe
+
+          echo '--- size ---'
+          size ./main.exe
+
+          echo '--- nm -C ---'
+          nm -C ./main.exe
+
+          echo '--- objdump -t ---'
+          objdump -t ./main.exe
+        "
