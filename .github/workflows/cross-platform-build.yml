@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-linux:
-    name: Linux Build (O0 & O3)
+    name: Linux Build and Run (O0 & O3)
     runs-on: ubuntu-latest
 
     steps:
@@ -17,75 +17,124 @@ jobs:
     - name: Install tools
       run: sudo apt-get update && sudo apt-get install -y binutils
 
-    - name: Build and run with -O0 and -O3
+    - name: Build with -O0
       run: |
-        for OPT in O0 O3; do
-          echo "=== Building with -$OPT ==="
-          cmake -S . -B build_$OPT -DCMAKE_CXX_FLAGS="-$OPT" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build_$OPT
+        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS="-O0" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_O0
 
-          echo "--- Running program (-$OPT) ---"
-          ./build_$OPT/main
+    - name: Run and Inspect -O0
+      run: |
+        ./build_O0/main
 
-          echo "--- size (main -$OPT) ---"
-          size ./build_$OPT/main
+        echo "--- size (-O0) ---"
+        size ./build_O0/main
 
-          echo "--- objdump -t (main -$OPT) ---"
-          objdump -t ./build_$OPT/main
+        echo "--- objdump -t (-O0) ---"
+        objdump -t ./build_O0/main
 
-          echo "--- readelf -S (main -$OPT) ---"
-          readelf -S ./build_$OPT/main
-        done
+        echo "--- readelf -S (-O0) ---"
+        readelf -S ./build_O0/main
+
+    - name: Build with -O3
+      run: |
+        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS="-O3" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_O3
+
+    - name: Run and Inspect -O3
+      run: |
+        ./build_O3/main
+
+        echo "--- size (-O3) ---"
+        size ./build_O3/main
+
+        echo "--- objdump -t (-O3) ---"
+        objdump -t ./build_O3/main
+
+        echo "--- readelf -S (-O3) ---"
+        readelf -S ./build_O3/main
 
   build-windows:
-    name: Windows Build (O0 & O3)
+    name: Windows Build and Run (O0 & O3)
     runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build and run with -O0 and -O3
+    - name: Build with /O0
       shell: bash
       run: |
-        for OPT in O0 O3; do
-          echo "=== Building with /$OPT ==="
-          cmake -S . -B build_$OPT -DCMAKE_CXX_FLAGS="/$OPT" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build_$OPT --config Release
+        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS="/O0" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_O0 --config Release
 
-          exe_path="build_$OPT/Release/main.exe"
-          echo "--- Running program (/ $OPT) ---"
-          "$exe_path"
+    - name: Run and Inspect /O0
+      shell: bash
+      run: |
+        exe="build_O0/Release/main.exe"
+        "$exe"
 
-          echo "--- objdump -t (main.exe /$OPT) ---"
-          objdump -t "$exe_path" || echo "objdump not available"
+        echo "--- objdump -t (/O0) ---"
+        objdump -t "$exe" || echo "objdump not available"
 
-          echo "--- nm (main.exe /$OPT) ---"
-          nm "$exe_path" || echo "nm not available"
-        done
+        echo "--- nm (/O0) ---"
+        nm "$exe" || echo "nm not available"
+
+    - name: Build with /O3
+      shell: bash
+      run: |
+        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS="/O3" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_O3 --config Release
+
+    - name: Run and Inspect /O3
+      shell: bash
+      run: |
+        exe="build_O3/Release/main.exe"
+        "$exe"
+
+        echo "--- objdump -t (/O3) ---"
+        objdump -t "$exe" || echo "objdump not available"
+
+        echo "--- nm (/O3) ---"
+        nm "$exe" || echo "nm not available"
 
   build-macos:
-    name: macOS Build (O0 & O3)
+    name: macOS Build and Run (O0 & O3)
     runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build and run with -O0 and -O3
+    - name: Build with -O0
       run: |
-        for OPT in O0 O3; do
-          echo "=== Building with -$OPT ==="
-          cmake -S . -B build_$OPT -DCMAKE_CXX_FLAGS="-$OPT" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build_$OPT
+        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS="-O0" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_O0
 
-          echo "--- Running program (-$OPT) ---"
-          ./build_$OPT/main
+    - name: Run and Inspect -O0
+      run: |
+        ./build_O0/main
 
-          echo "--- size (main -$OPT) ---"
-          size ./build_$OPT/main || echo "size not available"
+        echo "--- size (-O0) ---"
+        size ./build_O0/main || echo "size not available"
 
-          echo "--- nm (main -$OPT) ---"
-          nm ./build_$OPT/main || echo "nm not available"
+        echo "--- nm (-O0) ---"
+        nm ./build_O0/main || echo "nm not available"
 
-          echo "--- otool -l (main -$OPT) ---"
-          otool -l ./build_$OPT/main || echo "otool not available"
-        done
+        echo "--- otool -l (-O0) ---"
+        otool -l ./build_O0/main || echo "otool not available"
+
+    - name: Build with -O3
+      run: |
+        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS="-O3" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_O3
+
+    - name: Run and Inspect -O3
+      run: |
+        ./build_O3/main
+
+        echo "--- size (-O3) ---"
+        size ./build_O3/main || echo "size not available"
+
+        echo "--- nm (-O3) ---"
+        nm ./build_O3/main || echo "nm not available"
+
+        echo "--- otool -l (-O3) ---"
+        otool -l ./build_O3/main || echo "otool not available"
