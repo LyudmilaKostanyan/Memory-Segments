@@ -97,7 +97,7 @@ jobs:
     - name: Build -O0
       run: |
         C:/tools/msys64/usr/bin/bash.exe -lc "
-          export PATH=/mingw64/bin:\$PATH
+          cd \$(cygpath -u '${GITHUB_WORKSPACE}')
           mkdir -p build_O0 && cd build_O0
           cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O0 -g' ..
           make
@@ -106,9 +106,7 @@ jobs:
     - name: Run -O0
       run: |
         C:/tools/msys64/usr/bin/bash.exe -lc "
-          export PATH=/mingw64/bin:\$PATH
-          cd build_O0
-
+          cd \$(cygpath -u '${GITHUB_WORKSPACE}/build_O0')
           ./main.exe
           size ./main.exe
           nm -C ./main.exe
@@ -118,7 +116,7 @@ jobs:
     - name: Build -O3
       run: |
         C:/tools/msys64/usr/bin/bash.exe -lc "
-          export PATH=/mingw64/bin:\$PATH
+          cd \$(cygpath -u '${GITHUB_WORKSPACE}')
           mkdir -p build_O3 && cd build_O3
           cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O3 -g' ..
           make
@@ -127,11 +125,10 @@ jobs:
     - name: Run -O3
       run: |
         C:/tools/msys64/usr/bin/bash.exe -lc "
-          export PATH=/mingw64/bin:\$PATH
-          cd build_O3
-
+          cd \$(cygpath -u '${GITHUB_WORKSPACE}/build_O3')
           ./main.exe
           size ./main.exe
           nm -C ./main.exe
           objdump -t ./main.exe
         "
+      
