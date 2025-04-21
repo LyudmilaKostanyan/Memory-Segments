@@ -5,6 +5,30 @@
 This project analyzes the memory segments of a compiled program by inspecting its memory layout using various tools such as `size`, `objdump -t`, and `readelf -S`. The primary goal is to demonstrate how different types of variables (global, local, initialized, and uninitialized) map into distinct memory segments, and how compiler optimization flags (`-O0` for debug and `-O3` for release) influence the memory layout.
 
 ---
+
+# Table of Contents
+
+1. [Overview](#overview)
+2. [Memory Segments](#memory-segments)
+    - [1. .text Segment](#1-text-segment)
+    - [2. .data Segment](#2-data-segment)
+    - [3. .bss Segment](#3-bss-segment)
+    - [4. Heap Segment](#4-heap-segment)
+    - [5. Stack Segment](#5-stack-segment)
+3. [Example Output](#example-output)
+    - [Output from `size` Command](#output-from-size-command)
+    - [Output from `objdump -t` Command](#output-from-objdump-t-command)
+    - [Output from `readelf -S` Command](#output-from-readelf-s-command)
+4. [How to Compile and Run](#how-to-compile-and-run)
+    - [Clone the Repository](#clone-the-repository)
+    - [Build the Project](#build-the-project)
+    - [Run the Program](#run-the-program)
+    - [Running the Commands Used in GitHub Actions](#running-the-commands-used-in-github-actions)
+        - [1. `size` Command](#1-size-command)
+        - [2. `objdump -t` Command](#2-objdump-t-command)
+        - [3. `readelf -S` Command](#3-readelf-s-command)
+
+---
   
 ## Memory Segments
 
