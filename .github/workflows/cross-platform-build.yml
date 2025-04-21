@@ -1,4 +1,4 @@
-name: Cross platform O0/O3 builds (Makefiles only, no LLVM/Ninja)
+name: Cross-platform O0/O3 builds
 
 on:
   push:
@@ -7,14 +7,25 @@ on:
     branches: ["main"]
 
 jobs:
-  linux:
-    name: Linux Build and Run (O0 & O3)
-    runs-on: ubuntu-latest
+  build_and_run:
+    name: Linux and macOS
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Install tools
-      run: sudo apt-get update && sudo apt-get install -y build-essential binutils cmake
+      run: |
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          sudo apt-get update && sudo apt-get install -y build-essential binutils cmake make
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          brew install binutils cmake
+          echo 'export PATH="/opt/homebrew/opt/binutils/bin:$PATH"' >> ~/.bash_profile
+          source ~/.bash_profile
+        fi
 
     - name: Build -O0
       run: |
@@ -23,11 +34,14 @@ jobs:
 
     - name: Run -O0
       run: |
-        ./build_O0/main
-        size ./build_O0/main
-        nm -C ./build_O0/main
-        objdump -t ./build_O0/main
-        readelf -S ./build_O0/main
+        executable="./build_O0/main"
+        size $executable
+        objdump -t $executable
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          readelf -S $executable
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          otool -hvl $executable
+        fi
 
     - name: Build -O3
       run: |
@@ -36,44 +50,17 @@ jobs:
 
     - name: Run -O3
       run: |
-        ./build_O3/main
-        size ./build_O3/main
-        nm -C ./build_O3/main
-        objdump -t ./build_O3/main
-        readelf -S ./build_O3/main
-
-  macos:
-    name: macOS Build and Run (O0 & O3)
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Build -O0
-      run: |
-        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS_INIT="-O0 -g" -DCMAKE_BUILD_TYPE=Release
-        cmake --build build_O0
-
-    - name: Run -O0
-      run: |
-        ./build_O0/main
-        size ./build_O0/main || echo "size not available"
-        nm -C ./build_O0/main || echo "nm not available"
-        otool -l ./build_O0/main || echo "otool not available"
-
-    - name: Build -O3
-      run: |
-        cmake -S . -B build_O3 -DCMAKE_CXX_FLAGS_INIT="-O3 -g" -DCMAKE_BUILD_TYPE=Release
-        cmake --build build_O3
-
-    - name: Run -O3
-      run: |
-        ./build_O3/main
-        size ./build_O3/main || echo "size not available"
-        nm -C ./build_O3/main || echo "nm not available"
-        otool -l ./build_O3/main || echo "otool not available"
+        executable="./build_O3/main"
+        size $executable || echo "size not available"
+        objdump -t $executable
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          readelf -S $executable
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          otool -hvl $executable
+        fi
 
   windows:
-    name: Windows Build and Run (O0 & O3 using MSYS2 + Make)
+    name: Windows Build and Run
     runs-on: windows-latest
     defaults:
       run:
@@ -84,7 +71,7 @@ jobs:
     - name: Install MSYS2
       run: choco install msys2 -y
 
-    - name: Install MSYS2 packages (GCC, Make, CMake, Binutils)
+    - name: Install MSYS2 packages
       run: |
         C:/tools/msys64/usr/bin/bash.exe -lc "
           pacman -Sy --noconfirm \
@@ -99,7 +86,7 @@ jobs:
         C:/tools/msys64/usr/bin/bash.exe -lc "
           cd \$(cygpath -u '${GITHUB_WORKSPACE}')
           mkdir -p build_O0 && cd build_O0
-          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O0 -g' ..
+          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O0 -g' .. 
           make
         "
 
@@ -109,8 +96,8 @@ jobs:
           cd \$(cygpath -u '${GITHUB_WORKSPACE}/build_O0')
           ./main.exe
           size ./main.exe
-          nm -C ./main.exe
           objdump -t ./main.exe
+          objdump -x ./main.exe
         "
 
     - name: Build -O3
@@ -118,7 +105,7 @@ jobs:
         C:/tools/msys64/usr/bin/bash.exe -lc "
           cd \$(cygpath -u '${GITHUB_WORKSPACE}')
           mkdir -p build_O3 && cd build_O3
-          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O3 -g' ..
+          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O3 -g' .. 
           make
         "
 
@@ -128,7 +115,6 @@ jobs:
           cd \$(cygpath -u '${GITHUB_WORKSPACE}/build_O3')
           ./main.exe
           size ./main.exe
-          nm -C ./main.exe
           objdump -t ./main.exe
+          objdump -x ./main.exe
         "
-      
