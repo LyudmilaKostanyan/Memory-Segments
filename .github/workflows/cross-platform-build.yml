@@ -29,7 +29,7 @@ jobs:
 
     - name: Build -O0
       run: |
-        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS_INIT="-O0 -g" -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build_O0 -DCMAKE_CXX_FLAGS_INIT="-O0 -g" -DCMAKE_BUILD_TYPE=Debug
         cmake --build build_O0
 
     - name: Run -O0
@@ -86,7 +86,7 @@ jobs:
         C:/tools/msys64/usr/bin/bash.exe -lc "
           cd \$(cygpath -u '${GITHUB_WORKSPACE}')
           mkdir -p build_O0 && cd build_O0
-          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O0 -g' .. 
+          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O0 -g' -DCMAKE_BUILD_TYPE=Debug .. 
           make
         "
 
@@ -105,7 +105,7 @@ jobs:
         C:/tools/msys64/usr/bin/bash.exe -lc "
           cd \$(cygpath -u '${GITHUB_WORKSPACE}')
           mkdir -p build_O3 && cd build_O3
-          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O3 -g' .. 
+          cmake -G 'Unix Makefiles' -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS='-O3 -g' -DCMAKE_BUILD_TYPE=Release .. 
           make
         "
 
